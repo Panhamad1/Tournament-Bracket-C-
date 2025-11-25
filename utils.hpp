@@ -5,28 +5,41 @@
 class Tournament {
 private:
     Node* root;
-    int matchCount;
-
 public:
     Tournament() {
         root = nullptr;
-        matchCount = 1;
     }
 
     // === BUILD ===
-    Node* buildRecursive(int currentLevel, int totalLevels, vector<string>& players, size_t& index) {
+    void create(vector<string> players) {
+        size_t totalPlayers = players.size();
+        int totalLevels = 1;
+        size_t temp = 1;
+        while (temp < totalPlayers) {
+            temp *= 2;
+            totalLevels++;
+        }
+        while (players.size() < temp) {
+            players.push_back("BYE");
+        }
+        size_t amountPlayerRightNow = 0;
+        root = buildRecursive(1, totalLevels, players, amountPlayerRightNow);
+        assignMatchIDs(root);
+    }
+
+    Node* buildRecursive(int currentLevel, int totalLevels, vector<string>& players, size_t& amountPlayerRightNow) {
         if (currentLevel == totalLevels) {
-            if (index < players.size()) {
-                Node* leaf = new Node(players[index]);
-                index++;
+            if (amountPlayerRightNow < players.size()) {
+                Node* leaf = new Node(players[amountPlayerRightNow]);
+                amountPlayerRightNow++;
                 return leaf;
             } else {
                 return new Node("BYE");
             }
         }
         Node* node = new Node("");
-        node->left = buildRecursive(currentLevel + 1, totalLevels, players, index);
-        node->right = buildRecursive(currentLevel + 1, totalLevels, players, index);
+        node->left = buildRecursive(currentLevel + 1, totalLevels, players, amountPlayerRightNow);
+        node->right = buildRecursive(currentLevel + 1, totalLevels, players, amountPlayerRightNow);
         return node;
     }
 
@@ -34,9 +47,12 @@ public:
         if (!root) {
             return;
         }
+
         queue<Node*> q;
         vector<vector<Node*>> levels;
+
         q.push(root);
+
         while (!q.empty()) {
             int n = q.size();
             vector<Node*> level;
@@ -55,28 +71,12 @@ public:
         }
         int id = 1;
         for (int i = levels.size() - 1; i >= 0; i--) {
-            for (auto m : levels[i]) {
-                m->matchId = "M" + to_string(id++);
+            for (size_t j = 0; j < levels[i].size(); j++) {
+                levels[i][j]->matchId = "M" + to_string(id++);
             }
         }
     }
 
-    void create(vector<string> players) {
-        size_t totalPlayers = players.size();
-        int totalLevels = 1;
-        size_t temp = 1;
-        while (temp < totalPlayers) {
-            temp *= 2;
-            totalLevels++;
-        }
-        while (players.size() < temp) {
-            players.push_back("BYE");
-        }
-        size_t index = 0;
-        matchCount = 1;
-        root = buildRecursive(1, totalLevels, players, index);
-        assignMatchIDs(root);
-    }
 
     // === TOURNAMENT EXECUTION ===
     void startTournament() {
@@ -107,8 +107,6 @@ public:
                 cout << "\nSemifinal:\n";
             } else if (r == levels.size() - 3) {
                 cout << "\nFinal:\n";
-            } else {
-                cout << "\nFinal:\n";
             }
             for (auto m : levels[r]) {
                 string a = m->left->name;
@@ -125,8 +123,7 @@ public:
         if (!node) {
             return;
         }
-        if (node->left && node->right &&
-            node->left->left == nullptr && node->right->left == nullptr) {
+        if (node->left && node->right && node->left->left == nullptr && node->right->left == nullptr) {
             cout << node->matchId << ": " << node->left->name
                  << " vs " << node->right->name << endl;
             return;
@@ -158,11 +155,6 @@ public:
 
     void wouldMeet(string p1, string p2) {
         Node* meet = findMeetingNode(root, p1, p2);
-        if (!meet || meet->matchId == "") {
-            cout << "\n❌ " << p1 << " and " << p2
-                 << " would not meet in this bracket.\n";
-            return;
-        }
         int totalDepth = getDepth(root);
         int meetDepth = getDepth(meet);
         int roundNum = totalDepth - meetDepth + 1;

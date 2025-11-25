@@ -18,7 +18,7 @@ int main() {
 
     t.startTournament(); // plays all rounds and shows champion
     cout << "\n🛣️ Path to Final for Anna:\n";
-    vector<string> path = t.pathToFinal("Anna");
+    vector<string> path = t.pathToFinal("Ben");
 
     if (path.empty())
         cout << "Player not found!\n";
